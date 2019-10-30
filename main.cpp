@@ -1,5 +1,6 @@
 /*
  * To Compile g++ -O2 -std=c++14 main.cpp -lcrypto
+ * Command to delete files: cat duplicates.txt | xargs rm | sh
  */
 
 #include <unistd.h>
@@ -145,8 +146,25 @@ unordered_map <string,vector<string>> getSameSha256(const vector<string>& files)
     return temp;
 }
 
-vector<vector<string>> getDuplicated(){
-    vector<vector<string>> ret;
+void writeDuplicated(FILE *fout,vector<string> fileNames){
+    long min=epochTime(fileNames[0].c_str());
+    int index=0;
+    for(int j=1;j<fileNames.size();j++){
+        long temp=epochTime(fileNames[j].c_str());
+        if(temp<min){
+            min=temp;
+            index=j;
+        }
+    }
+    for(int j=0;j<fileNames.size();j++){
+        if(j==index)continue;
+        fprintf(fout,"'%s'\n",fileNames[j].c_str());
+    }
+    fflush(fout);
+}
+
+void findDuplicated(){
+    FILE *fout=fopen("duplicates.txt","w");
     for(const auto& elem : mapSameSize){
         if(elem.second.size()<=1)continue;
 
@@ -157,7 +175,8 @@ vector<vector<string>> getDuplicated(){
 
             //HERE SAME SIZE AND SAME MD5
 
-            ret.push_back(i.second);
+            writeDuplicated(fout,i.second);
+
 
             cout<<elem.first<<" - "<<i.first<<endl;
             for(const auto& j:i.second){
@@ -174,7 +193,7 @@ vector<vector<string>> getDuplicated(){
             }*/
         }
     }
-    return ret;
+    fclose(fout);
 }
 
 int main(int argc,char **argv) {
@@ -183,27 +202,6 @@ int main(int argc,char **argv) {
         return 1;
     }
     for(int i=1;i<argc;i++)createMapSameSize(argv[i]);
-    //createMapSameSize("/media/giovanni/TOSHIBA EXT/Recovery/F(PHOTOREC)");
-
-    vector<vector<string>> dup=getDuplicated();
-    FILE *out=fopen("/home/giovanni/Scrivania/duplicates.txt","w");
-
-    for(auto i:dup){
-        long min=epochTime(i[0].c_str());
-        int index=0;
-        for(int j=1;j<i.size();j++){
-            long temp=epochTime(i[j].c_str());
-            if(temp<min){
-                min=temp;
-                index=j;
-            }
-        }
-        for(int j=0;j<i.size();j++){
-            if(j==index)continue;
-            fprintf(out,"'%s'\n",i[j].c_str());
-        }
-    }
-    fclose(out);
-
+    findDuplicated();
     return 0;
 }
